@@ -19,3 +19,6 @@ signaling/
 tests/
 .geminiignore
 .pytest_cache/
+
+# generated upon running create_constants.py
+constants/gamma_72 

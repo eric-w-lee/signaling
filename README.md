@@ -1,6 +1,6 @@
 # Medical Residency Match Simulation
 
-This project is a Python-based simulation designed to analyze the medical residency matching process, with a specific focus on the impact of "signals" on match outcomes. It uses data from the National Resident Matching Program (NRMP) to model the behavior of applicants and programs. The simulation explores various scenarios and parameters to understand their effects on key metrics like the number of applications, match rates, and unfilled positions. This study is currently under review.
+This project is a Python-based simulation designed to analyze the medical residency matching process, with a specific focus on the impact of "signals" on match outcomes. It uses data from the National Resident Matching Program (NRMP) to model the behavior of applicants and programs. The current analysis is limited to Surgery (Categorical), Anesthesiology, and Interventional Radiology (Integrated), with applicants sending seven signals. The study compares outcomes when 95%, 90%, 85%, or 80% of programs prioritize signals. This study is currently under review.
 
 Title: A Computation Approach to Residency Match Preference Signaling: Balancing Benefit for Programs and Applicants
 
@@ -25,21 +25,21 @@ To generate the constants, run the following command:
 python constants/create_constants.py
 ```
 
-This will create the `constants.parquet` file, which contains a variety of scenarios for the simulation. The script uses base data from `constants/nrmp_base_data.csv` and generates a range of simulation parameters using statistical distributions (Gamma distribution for applications and interviews per position).
+This will create the `constants.parquet` file. It contains 1,000 independent randomized market configurations for each of the three specialties, all using seven signals. The script uses base data from `constants/nrmp_base_data.csv` and generates simulation parameters using statistical distributions (Gamma distribution for applications and interviews per position).
 
 # Running the Simulation
 
 ## 1. Configure Analysis Variations
 
-The simulations to be run are configured in the `analysis_variations.csv` file. Each row defines an analysis scenario with different randomization settings.
+The simulations to be run are configured in the `analysis_variations.csv` file. Each row defines an analysis scenario by specifying the percentage of programs that prioritize signals.
 
 The columns in `analysis_variations.csv` are:
-- `analysis_name`: A unique name for the analysis scenario (e.g., `base`, `random_distribution`).
+- `analysis_name`: A unique name for the analysis scenario (for example, `prioritize_95`).
 - `run_bool`: Whether to run this analysis scenario.
 - `random_application_distribution`: If True, applicants apply to programs randomly, ignoring quartiles.
 - `random_applicant_rank_list`: If True, applicants' rank lists are randomized (within signaled/non-signaled categories).
 - `random_program_rank_list`: If True, programs' rank lists are randomized (within signaled/non-signaled categories).
-- `percent_programs_prioritize_signals`: Fraction of programs that prioritize signaled applications when selecting interviewees and building ranked lists for matching algorithm (e.g.,`1.0` means all programs prioritize signaled applications, while `0.0` means programs are functionally blind to signaling).
+- `percent_programs_prioritize_signals`: Fraction of programs that prioritize signaled applications when selecting interviewees and building ranked lists for the matching algorithm. The configured values are `base (1.0)`, `0.95`, `0.90`, `0.85`, and `0.80`.
 
 ## 2. Execute the Simulation
 
@@ -49,7 +49,7 @@ The main simulation script is `probabilistic_simulation.py`. To run the enabled 
 python probabilistic_simulation.py
 ```
 
-The script reads the `constants.parquet` file, runs simulations in parallel using `ProcessPoolExecutor`, and saves raw results to `results/model_output/`.
+The script reads the `constants.parquet` file, runs simulations in parallel using `ProcessPoolExecutor`, and saves raw results to `results/model_output/`. The simulation will also generate logs with timing and completion information. 
 
 # Data Processing
 
@@ -65,7 +65,7 @@ This script reads the raw CSVs from `results/model_output/`, calculates 95% conf
 
 The project includes two primary scripts for visualizing the results:
 
-1.  **`panel_graphs.py`**: Generates a 4-panel figure for specific programs (e.g., Anesthesiology, General Surgery). These panels compare different analysis scenarios across metrics like interview rates, unfilled positions, and workload. This will also generate 6-panel decile graphs.
+1. **`panel_graphs.py`**: Generates a 4-panel figure for the three configured specialties. These panels compare the four signal-prioritization scenarios across metrics like interview rates, unfilled positions, and workload. This will also generate 6-panel decile graphs.
 2.  **`residual_graphs.py`**: Generates a "residual analysis" plot that looks at the distance between optimal signal values across all specialties.
 
 You may specify within each python file what programs to graph and the input/output directories.
@@ -110,18 +110,18 @@ This plot evaluates the "trade-off" for programs and applicants: the relative in
 
 The simulation operates through the following steps:
 
-1.  **Initialization**: Scenarios are loaded from `constants.parquet`.
+1. **Initialization**: The three specialties and their randomized market configurations are loaded from `constants.parquet`.
 2.  **Applicant and Program Creation**: 
     - Applicants are assigned to quartiles/deciles based on "quality".
     - Applicants choose programs based on a 50/25/25 distribution (50% in their quartile, 25% in the one above, 25% below) unless randomized.
 3.  **The Signaling/Interview Phase**:
-    - Applicants send a fixed number of signals.
+    - Applicants send seven signals.
     - Programs review applications, prioritizing signaled applications first.
     - Programs offer interviews up to their capacity.
 4.  **Matching Algorithm**:
     - The simulation uses an **Applicant-Proposing Deferred Acceptance Algorithm** (stable matching), mirroring the NRMP Match.
     - Both parties create rank-order lists. Signals are prioritized in program rankings.
-5.  **Data Collection**: Results are aggregated across hundreds of iterations per signal value to ensure statistical significance.
+5. **Data Collection**: Results are aggregated across 1,000 randomized market configurations per specialty at seven signals for each signal-prioritization scenario.
 
 # Key Assumptions
 
@@ -131,4 +131,4 @@ The simulation operates through the following steps:
 
 # Disclaimers
 
-Artificial intelligence was used to assist with graphing functionality and minor code-block completion. No AI-based tools were used for study design nor the implementation of the main probabilistic_simulation.py file. See manuscript for full model details. 
+Artificial intelligence was used to assist with graphing functionality, logging, and minor code-block completion. No AI-based tools were used for study design nor the implementation of main algorithms in probabilistic_simulation.py. See manuscript for full model details. 

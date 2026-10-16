@@ -7,16 +7,15 @@ import os
 # --- Configuration ---
 
 # File paths as requested
-IMPORT_PATH = "results/calculated/gamma_72/"
-EXPORT_PATH = "figures/gamma_72/"
+IMPORT_PATH = "results/calculated/sensitivity/"
+EXPORT_PATH = "figures/sensitivity/"
 
 # Sensitivity analyses to include
 ANALYSES = [
-    "base",
-    "random_distribution",
-    "random_applicant_rank_list",
-    "random_program_rank_list",
-    "random_all"
+    "prioritize_95",
+    "prioritize_90",
+    "prioritize_85",
+    "prioritize_80"
 ]
 
 

@@ -6,16 +6,15 @@ import os
 # CONFIGURATION
 # =============================================================================
 # The subdirectory for the specific model output we want to process
-INPUT_DIRECTORY = f"results/model_output/gamma_72/"
-OUTPUT_DIRECTORY = f"results/calculated/gamma_72/"
+INPUT_DIRECTORY = f"results/model_output/sensitivity/"
+OUTPUT_DIRECTORY = f"results/calculated/sensitivity/"
 
 # Scenarios defined in the project configuration
 ANALYSES = [
-    "base",
-    "random_distribution",
-    "random_applicant_rank_list",
-    "random_program_rank_list",
-    "random_all"
+    "prioritize_95",
+    "prioritize_90",
+    "prioritize_85",
+    "prioritize_80"
 ]
 
 # Core metrics used in individual, combined, and dual-axis graphs

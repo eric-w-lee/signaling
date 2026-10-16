@@ -7,6 +7,7 @@ __pycache__/
 *.parquet
 results/model_output/
 figures/
+logs/
 machine_learning_model/
 signaling/
 *.pyc
@@ -20,5 +21,5 @@ tests/
 .geminiignore
 .pytest_cache/
 
-# generated upon running create_constants.py
-constants/gamma_72 
+# ignore all constant generated foldres
+constants/*

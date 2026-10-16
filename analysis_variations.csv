@@ -1,11 +1,6 @@
 analysis_name,run_bool,random_application_distribution,random_applicant_rank_list,random_program_rank_list,percent_programs_prioritize_signals
-base,FALSE,FALSE,FALSE,FALSE,1
-random_distribution,FALSE,TRUE,FALSE,FALSE,1
-random_applicant_rank_list,FALSE,FALSE,TRUE,FALSE,1
-random_program_rank_list,FALSE,FALSE,FALSE,TRUE,1
-random_all,FALSE,TRUE,TRUE,TRUE,1
-base_80,TRUE,FALSE,FALSE,FALSE,0.8
-base_60,TRUE,FALSE,FALSE,FALSE,0.6
-base_40,TRUE,FALSE,FALSE,FALSE,0.4
-base_20,TRUE,FALSE,FALSE,FALSE,0.2
-base_0,TRUE,FALSE,FALSE,FALSE,0
+base,TRUE,FALSE,FALSE,FALSE,1.0
+prioritize_95,TRUE,FALSE,FALSE,FALSE,0.95
+prioritize_90,TRUE,FALSE,FALSE,FALSE,0.90
+prioritize_85,TRUE,FALSE,FALSE,FALSE,0.85
+prioritize_80,TRUE,FALSE,FALSE,FALSE,0.80

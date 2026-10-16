@@ -8,22 +8,21 @@ import os
 
 # --- Configuration ---
 
-INPUT_DIRECTORY = "results/calculated/gamma_72/"
-OUTPUT_DIRECTORY = "figures/gamma_72/"
+INPUT_DIRECTORY = "results/calculated/sensitivity/"
+OUTPUT_DIRECTORY = "figures/sensitivity/"
 
 # The 5 analyses you want to graph. These should match the CSV filenames (without .csv)
 ANALYSES_TO_GRAPH = [
-    "base",
-    "random_distribution",
-    "random_applicant_rank_list",
-    "random_program_rank_list",
-    "random_all"
+    "prioritize_95",
+    "prioritize_90",
+    "prioritize_85",
+    "prioritize_80"
 ]
 
 PROGRAMS_TO_GRAPH = [
-    ("Anesthesiology", 10),
-    ("Surgery (Categorical)", 12),
-    ("Interventional Radiology (Integrated)", 8)
+    ("Anesthesiology", 7),
+    ("Surgery (Categorical)", 7),
+    ("Interventional Radiology (Integrated)", 7)
 ]
 
 METRIC_NAMES = {

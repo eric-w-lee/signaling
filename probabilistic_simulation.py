@@ -7,18 +7,48 @@ is run :).
 import numpy as np
 import pandas as pd
 import os
+import logging
+import time
 from collections import deque
-import os
 import pyarrow.parquet as pq
 import probabilistic_simulation_helpers as helpers
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
-CONSTANTS_DIRECTORY = "constants/gamma_72/"
-OUTPUT_DIRECTORY = "results/model_output/gamma_72/"
+CONSTANTS_DIRECTORY = "constants/sensitivity/"
+OUTPUT_DIRECTORY = "results/model_output/sensitivity/"
+LOG_DIRECTORY = "logs/"
 
 # can modify here to leave whatever number of cores free
 CORES_TO_USE = max(1, os.cpu_count()-4)
+
+
+def format_elapsed(seconds: float) -> str:
+    """Format elapsed seconds as hours, minutes, and seconds."""
+    hours, remainder = divmod(int(seconds), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def configure_logging() -> tuple[logging.Logger, str]:
+    os.makedirs(LOG_DIRECTORY, exist_ok=True)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(LOG_DIRECTORY, f"simulation_{timestamp}.log")
+
+    logger = logging.getLogger("probabilistic_simulation")
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S")
+
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    return logger, log_path
 
 
 def calculate_results(
@@ -632,7 +662,12 @@ def read_analysis_variations(path: str) -> pd.DataFrame:
 
 if __name__ == "__main__":
 
-    print(f"Starting probabilistic simulation on {CORES_TO_USE} cores.")
+    logger, log_path = configure_logging()
+    total_start = time.perf_counter()
+    logger.info(
+        "Starting probabilistic simulation on %s cores. Log: %s",
+        CORES_TO_USE,
+        log_path)
     analysis_variations = read_analysis_variations("analysis_variations.csv")
 
     for index, variation_row in analysis_variations.iterrows():
@@ -649,8 +684,11 @@ if __name__ == "__main__":
             sim_results['sim_id'].values) if not sim_results.empty else set()
 
         variation_settings = variation_row.to_dict()
-        print(
-            f"Running analysis: {variation_settings['analysis_name']}. Already ran simulations: {len(sims_run)}")
+        analysis_start = time.perf_counter()
+        logger.info(
+            "Running analysis: %s. Already ran simulations: %s",
+            variation_settings['analysis_name'],
+            len(sims_run))
 
         simulation_constants = pq.ParquetFile(
             CONSTANTS_DIRECTORY + "constants.parquet")
@@ -696,17 +734,30 @@ if __name__ == "__main__":
 
                     sims_run.update(batch_df['sim_id'].values)
 
-            print(
-                f"Batch {batch_idx + 1} processed. Total simulations: {len(
-                    sim_results)}")
+            logger.info(
+                "Analysis %s: batch %s processed; total simulations: %s; "
+                "analysis elapsed: %s; total elapsed: %s",
+                analysis_name,
+                batch_idx + 1,
+                len(sim_results),
+                format_elapsed(time.perf_counter() - analysis_start),
+                format_elapsed(time.perf_counter() - total_start))
 
             # Save interim results
             if (batch_idx + 1) % 5 == 0:
                 os.makedirs(os.path.dirname(results_path), exist_ok=True)
                 sim_results.to_csv(results_path, index=False)
-                print(f"Interim save to {results_path}")
+                logger.info("Interim save to %s", results_path)
 
         # Final save
         os.makedirs(os.path.dirname(results_path), exist_ok=True)
         sim_results.to_csv(results_path, index=False)
-        print(f"Simulation {analysis_name} complete.")
+        logger.info(
+            "Simulation %s complete; analysis elapsed: %s; total elapsed: %s",
+            analysis_name,
+            format_elapsed(time.perf_counter() - analysis_start),
+            format_elapsed(time.perf_counter() - total_start))
+
+    logger.info(
+        "All simulations complete; total elapsed: %s",
+        format_elapsed(time.perf_counter() - total_start))

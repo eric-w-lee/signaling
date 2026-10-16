@@ -39,6 +39,7 @@ The columns in `analysis_variations.csv` are:
 - `random_application_distribution`: If True, applicants apply to programs randomly, ignoring quartiles.
 - `random_applicant_rank_list`: If True, applicants' rank lists are randomized (within signaled/non-signaled categories).
 - `random_program_rank_list`: If True, programs' rank lists are randomized (within signaled/non-signaled categories).
+- `percent_programs_prioritize_signals`: Fraction of programs that prioritize signaled applications when selecting interviewees and building ranked lists for matching algorithm (e.g.,`1.0` means all programs prioritize signaled applications, while `0.0` means programs are functionally blind to signaling).
 
 ## 2. Execute the Simulation
 

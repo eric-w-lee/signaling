@@ -9,6 +9,7 @@ def _quartile_to_id_list(n) -> dict:
     }
     return quartiles
 
+
 def _id_to_quartile_dict(n) -> dict:
     quartile_size = n/4
     id_to_quartile = {}
@@ -22,6 +23,7 @@ def _id_to_quartile_dict(n) -> dict:
         else:
             id_to_quartile[i] = 4
     return id_to_quartile
+
 
 def _decile_to_id_list(n) -> dict:
     decile_size = n/10
@@ -38,6 +40,7 @@ def _decile_to_id_list(n) -> dict:
         10: [i for i in range(int(decile_size*9), n)]
     }
     return deciles
+
 
 def _id_to_decile_dict(n) -> dict:
     decile_size = n/10
@@ -103,10 +106,12 @@ def get_lookups(sim_settings):
 
 def get_dtypes(columns: list) -> dict:
     '''
-    Given a list of columns, identify the first as a string and the
-    remainder as booleans for later use in a dataframe read.
+    Given analysis variation columns, assign types for later use in a
+    dataframe read.
     '''
-    return {
-        **{columns[0]: 'str'},
-        **{col: 'bool' for col in columns[1:]}
-    }
+    dtypes = {columns[0]: 'str'}  # analysis name should be a string
+    for column in columns[1:]:
+        # percentage in float, all others are toggles
+        dtypes[column] = 'float64' if column == (
+            'percent_programs_prioritize_signals') else 'bool'
+    return dtypes

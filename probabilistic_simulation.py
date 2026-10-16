@@ -14,17 +14,18 @@ import probabilistic_simulation_helpers as helpers
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
-CONSTANTS_DIRECTORY= "constants/gamma_72/"
+CONSTANTS_DIRECTORY = "constants/gamma_72/"
 OUTPUT_DIRECTORY = "results/model_output/gamma_72/"
 
 # can modify here to leave whatever number of cores free
 CORES_TO_USE = max(1, os.cpu_count()-4)
 
+
 def calculate_results(
-    applicants: list, 
-    programs: list,
-    sim_settings: dict,
-    analysis_name: str):
+        applicants: list,
+        programs: list,
+        sim_settings: dict,
+        analysis_name: str):
 
     results = {
         'sim_id': sim_settings['sim_id'],
@@ -35,7 +36,6 @@ def calculate_results(
         'n_applicants': sim_settings['n_applicants'],
         'analysis_name': analysis_name
     }
-    
 
     total_signaled_interviews = 0
     total_signaled_programs = 0
@@ -64,12 +64,12 @@ def calculate_results(
             pro = app.matched_program
             # decile is from 1 to 10 inclusive so index is -1 ... care
             program_decile_matches[programs[pro].decile][app.decile-1] += 1
-                
+
     total_matches = 0
     total_positions = 0
     total_reviews = 0
     unfilled_spots = 0
-    
+
     for pro in programs:
         matches_at_pro = len(pro.tentative_matches)
         total_matches += matches_at_pro
@@ -78,23 +78,24 @@ def calculate_results(
         unfilled_spots += pro.n_positions-matches_at_pro
 
     results['p_int_given_signal'] = (
-        total_signaled_interviews / total_signaled_programs 
+        total_signaled_interviews / total_signaled_programs
         if total_signaled_programs > 0 else 0.0
     )
     results['p_int_given_nosignal'] = (
         total_non_signaled_interviews / total_non_signaled_programs
         if total_non_signaled_interviews > 0 else 0.0
     )
-    
+
     results['pct_matches_from_signal'] = (
-            matched_at_signal / total_matches if total_matches > 0 else 0.0)
+        matched_at_signal / total_matches if total_matches > 0 else 0.0)
     results['pct_match_from_nosignal'] = 1 - results['pct_matches_from_signal']
     results['reviews_per_program'] = total_reviews / sim_settings['n_programs']
     results['unfilled_positions'] = sim_settings['n_positions'] - total_matches
-    
+
     if results['unfilled_positions'] != unfilled_spots:
-        print(f"Warning: Unfilled positions calculated differently: {results['unfilled_positions']} vs {unfilled_spots}")
-    
+        print(
+            f"Warning: Unfilled positions calculated differently: {results['unfilled_positions']} vs {unfilled_spots}")
+
     # add on the decile plots
     for i in range(1, 11):
         total = sum(program_decile_matches[i])
@@ -110,13 +111,13 @@ def calculate_results(
 def stable_match(applicants: list, programs: list):
     """
     Implements the applicant-proposing deferred acceptance algorithm (NRMP style).
-    
+
     Applicants propose to programs in order of their final_rank_list.
     Programs tentatively hold the best applicants (according to their final_rank_list)
     up to their capacity, rejecting others.
-    
+
     The algorithm terminates when no applicant has a program left to propose to.
-    
+
     Compared to last push, this version just precomputes program rankings
     and uses a queue for free applicants for speed.
     """
@@ -230,7 +231,7 @@ class Applicant:
             self.signaled_interviews.sort()  # sort in ascending order
             self.non_signaled_interviews.sort()  # sort in ascending order
         self.final_rank_list = self.signaled_interviews + self.non_signaled_interviews
-        
+
     def pick_programs(self,
                       all_programs: list,
                       position_lookups: dict,
@@ -252,16 +253,16 @@ class Applicant:
     application numbers that are not divisible by 4.
 
     Applicant is the class defined above.
-    
+
     NOTE: there is a potential problem which is when there are not enough
     programs in a quartile to satisfy the application needs of an applicant.
-    
+
     For example, with the 50/25/25 rule, there is a chance to sample 75%
     of programs within your own quartile (1st or last).
-    
+
     If there are no programs left in quartile, currently we just exit ...
     if less then what you want just pick all of them remaining
-    
+
     Can also just sample other quartiles if needed
     '''
         applications = []
@@ -271,15 +272,15 @@ class Applicant:
             self.signaled_programs + self.non_signaled_programs)
 
         # very easy to ignore quartiles. just apply randomly
-        
+
         if self.no_quartile:
             available_programs = [
                 p.id for p in all_programs if p.id not in already_chosen_programs]
             # pick randomly from available
             n_to_pick = min(length, len(available_programs))
             program_choices = np.random.choice(
-                available_programs, 
-                size=n_to_pick, 
+                available_programs,
+                size=n_to_pick,
                 replace=False).tolist()
             for choice in program_choices:
                 choice = int(choice)  # proper type casting for later json
@@ -292,7 +293,7 @@ class Applicant:
                 else:
                     all_programs[choice].received_no_signals.append(self.id)
             return applications
-        
+
         # for not applying randomly ....
 
         divisions_of_4 = length//4  # divisions of 4 go to quartiles
@@ -303,8 +304,8 @@ class Applicant:
         quartile_below = (
             self.quartile + 1) if self.quartile < 4 else self.quartile
 
-        # this creates a list of the quartiles 
-        # sorted by their closeness to the applicant's quartile 
+        # this creates a list of the quartiles
+        # sorted by their closeness to the applicant's quartile
         # so that we can later step into quartiles by distance
         quartiles_by_closeness = sorted(
             position_lookups['program_quartile_to_id_list'].keys(),
@@ -378,15 +379,15 @@ class Applicant:
         return applications
 
     def __init__(
-        self,
-        id_index: int,
-        programs: list,
-        position_lookups: dict,
-        n_applications: int,
-        n_signals: int,
-        no_quartile = False,
-        random_rank_list_order = False):
-        
+            self,
+            id_index: int,
+            programs: list,
+            position_lookups: dict,
+            n_applications: int,
+            n_signals: int,
+            no_quartile=False,
+            random_rank_list_order=False):
+
         self.id = id_index
         self.quartile = position_lookups['applicant_id_to_quartile'][id_index]
         self.decile = position_lookups['applicant_id_to_decile'][id_index]
@@ -398,20 +399,20 @@ class Applicant:
         self.no_quartile = no_quartile
         self.random_rank_list_order = random_rank_list_order
 
-        
         self.signaled_programs = []
         self.non_signaled_programs = []
-        
+
         self.signaled_programs = self.pick_programs(
             programs, position_lookups, True)
-        
+
         self.non_signaled_programs = self.pick_programs(
             programs, position_lookups, False)
-        
+
         self.signaled_interviews = []
         self.non_signaled_interviews = []
         self.interviews_received = []
         self.final_rank_list = []
+
 
 class Program:
     # use slots to save memory and prevent __dict__ creation
@@ -427,7 +428,9 @@ class Program:
         "n_positions",
         "n_interviews",
         "rank_index",    # added in stable_match
-        "random_rank_list_order"
+        "random_rank_list_order",
+        # whether each program instance utilizes signals in interview and ranking
+        "prioritize_signals"
     )
 
     def create_final_rank_list_and_count_reviews(self):
@@ -435,8 +438,8 @@ class Program:
         When this function is called, applicatants have already applied
         and signaled to programs. Now, the goal is to fill the program 
         interviews. So, the logic is:
-        
-        0. Reviewed applications = len(received signals)
+
+        0. Reviewed applications = len(received signals) 
         1. Sort the received signals and non-signals in ascending order
         2. If len(received signals) >= num_interviews:
             final_rank_list = received signals [0:num_interviews]
@@ -444,61 +447,60 @@ class Program:
             reviewed applications += len(received no signals)
             final_rank_list = 
                 received signals + received no signals [0:remaining spots]
-                
+
         Note: also support for ignoring applicant ranking and randomly
         ranking people
-                
+
         '''
-        # must review all signals
-        self.reviewed_applications = len(self.received_signals)
-        signal_list = []
+        signal_list = list(self.received_signals)
+        no_signal_list = list(self.received_no_signals)
 
-        # behavior for random program list orders
-
-        if self.random_rank_list_order:
-            # shuffle IN PLACE
-            np.random.shuffle(self.received_signals)
-            signal_list = list(self.received_signals)
+        if self.random_rank_list_order:  # ignores applicant ranking
+            # shuffle in place
+            np.random.shuffle(signal_list)
+            np.random.shuffle(no_signal_list)
         else:
-            signal_list = sorted(self.received_signals)
+            signal_list.sort()
+            no_signal_list.sort()
 
-        if len(self.received_signals) >= self.n_interviews:
-            self.final_rank_list = signal_list[0:self.n_interviews]
-        else:
-            remaining_spots = self.n_interviews - len(self.received_signals)
-            # Can one day relax this assumption of having to review everybody
-            # if you don't fill with signals
-            # can do some greedy optimization but really it doesn't
-            # make a difference for local minimum
-            self.reviewed_applications += len(self.received_no_signals)
-            # final rank list always prioritizes signals
-            no_signal_list = []
-            if self.random_rank_list_order:
-                # randomize order they are added on
-                np.random.shuffle(self.received_no_signals)
-                no_signal_list = list(self.received_no_signals)
+        # if this program prioritizes signals
+        if self.prioritize_signals:
+            # check how many applications it needs to review
+            if len(self.received_signals) >= self.n_interviews:
+                self.final_rank_list = signal_list[:self.n_interviews]
+                # had to look through all signals to sort
+                self.reviewed_applications = len(signal_list)
             else:
-                no_signal_list = sorted(self.received_no_signals)
-            
-            # signals always prioritized
-            self.final_rank_list = (
-                signal_list +
-                no_signal_list[0:remaining_spots])
-
-    def __init__(
-        self, 
-        id_index,
-        interviews_per_position,  
-        positions,
-        position_lookups,
-        random_rank_list_order = False):
+                remaining_spots = self.n_interviews - len(self.received_signals)
+                # can one day relax this assumption of having to review all non-signals with greedy opt, but won't change local min
+                self.reviewed_applications = len(self.received_no_signals) + len(self.received_signals)
+                self.final_rank_list = signal_list + no_signal_list[:remaining_spots]
+        else: 
+            # if this program does not prioritize signals, it reviews all applications to rank them 
+            self.reviewed_applications = len(signal_list) + len(no_signal_list)
+            all_applicants = signal_list + no_signal_list
+            if self.random_rank_list_order:
+                np.random.shuffle(all_applicants)
+            else:
+                all_applicants.sort()
+            self.final_rank_list = all_applicants[:self.n_interviews]
         
+    def __init__(
+            self,
+            id_index,
+            interviews_per_position,
+            positions,
+            position_lookups,
+            random_rank_list_order=False,
+            prioritize_signals=True):
+
         self.id = id_index
         self.n_positions = positions
         self.n_interviews = self.n_positions * interviews_per_position
         self.quartile = position_lookups['program_id_to_quartile'][id_index]
         self.decile = position_lookups['program_id_to_decile'][id_index]
         self.random_rank_list_order = random_rank_list_order
+        self.prioritize_signals = prioritize_signals
         self.received_signals = []
         self.received_no_signals = []
         self.reviewed_applications = 0
@@ -519,6 +521,7 @@ def _get_positions_per_program(constants):
             positions[program] += 1
     return positions
 
+
 def run_sim(sim_settings: dict, variation_settings: dict) -> dict:
     '''
     Worker function for parallel execution, runs one full simulation given
@@ -526,23 +529,39 @@ def run_sim(sim_settings: dict, variation_settings: dict) -> dict:
     '''
 
     # hash it to the sim id which is always unique
-    seed = abs(hash(str(sim_settings['sim_id'])) + hash(str(variation_settings['analysis_name']))) % (2**32)
+    seed = abs(hash(str(sim_settings['sim_id'])) +
+               hash(str(variation_settings['analysis_name']))) % (2**32)
     np.random.seed(seed)
-    
+
     positions_per_program = _get_positions_per_program(sim_settings)
     position_lookups = helpers.get_lookups(sim_settings)
     
+    # sample num of programs that care about signals, assign ids, then create list of bools to instantiate 
+    n_prioritizing_programs = round(
+        sim_settings['n_programs'] * variation_settings[
+            'percent_programs_prioritize_signals'])
+    prioritizing_program_ids = set(np.random.choice(
+        sim_settings['n_programs'],
+        size=n_prioritizing_programs,
+        replace=False
+    ).tolist())
+    program_prioritize_signals = [
+        program_id in prioritizing_program_ids
+        for program_id in range(sim_settings['n_programs'])
+    ]
+
     programs = [
         Program(
-            j, 
-            sim_settings['interviews_per_pos_list'][j], 
+            j,
+            sim_settings['interviews_per_pos_list'][j],
             positions_per_program[j],
             position_lookups,
             random_rank_list_order=variation_settings[
-                'random_program_rank_list']
+                'random_program_rank_list'],
+            prioritize_signals=program_prioritize_signals[j]
         ) for j in range(sim_settings['n_programs'])
     ]
-    
+
     # create each applicant, apply to programs
     applicants = [
         Applicant(
@@ -557,7 +576,7 @@ def run_sim(sim_settings: dict, variation_settings: dict) -> dict:
                 'random_applicant_rank_list']
         ) for i in range(sim_settings['n_applicants'])
     ]
-    
+
     # review applications, offer interviews
     for program in programs:
         program.create_final_rank_list_and_count_reviews()
@@ -577,9 +596,9 @@ def run_sim(sim_settings: dict, variation_settings: dict) -> dict:
     applicants, programs = stable_match(applicants, programs)
 
     return calculate_results(
-        applicants, 
-        programs, 
-        sim_settings, 
+        applicants,
+        programs,
+        sim_settings,
         variation_settings['analysis_name'])
 
 
@@ -594,8 +613,6 @@ def read_run_simulations(RESULTS_PATH: str, WIPE_DATA: bool) -> pd.DataFrame:
         return pd.DataFrame()
     else:
         return pd.read_csv(RESULTS_PATH)
-    
-
 
 
 def read_analysis_variations(path: str) -> pd.DataFrame:
@@ -612,17 +629,18 @@ def read_analysis_variations(path: str) -> pd.DataFrame:
         print(f"Error: The file {path} was not found.")
         return pd.DataFrame()
 
+
 if __name__ == "__main__":
-    
+
     print(f"Starting probabilistic simulation on {CORES_TO_USE} cores.")
     analysis_variations = read_analysis_variations("analysis_variations.csv")
-    
+
     for index, variation_row in analysis_variations.iterrows():
         if not variation_row['run_bool']:
             continue
-        
+
         analysis_name = variation_row['analysis_name']
-        
+
         results_path = OUTPUT_DIRECTORY + f"results_{analysis_name}.csv"
         sim_results = read_run_simulations(
             RESULTS_PATH=results_path,
@@ -631,10 +649,12 @@ if __name__ == "__main__":
             sim_results['sim_id'].values) if not sim_results.empty else set()
 
         variation_settings = variation_row.to_dict()
-        print(f"Running analysis: {variation_settings['analysis_name']}. Already ran simulations: {len(sims_run)}")
+        print(
+            f"Running analysis: {variation_settings['analysis_name']}. Already ran simulations: {len(sims_run)}")
 
-        simulation_constants = pq.ParquetFile(CONSTANTS_DIRECTORY + "constants.parquet")
-        
+        simulation_constants = pq.ParquetFile(
+            CONSTANTS_DIRECTORY + "constants.parquet")
+
         BATCH_SIZE = 100
 
         # Process file in chunks
@@ -655,12 +675,12 @@ if __name__ == "__main__":
             with ProcessPoolExecutor(max_workers=CORES_TO_USE) as executor:
                 # Create a partial function with variation_settings fixed
                 run_sim_with_variation = partial(
-                    run_sim, 
+                    run_sim,
                     variation_settings=variation_settings)
                 future_results = executor.map(
-                    run_sim_with_variation, 
+                    run_sim_with_variation,
                     tasks)
-                
+
                 new_results = []
                 for res in future_results:
                     new_results.append(res)
@@ -685,7 +705,7 @@ if __name__ == "__main__":
                 os.makedirs(os.path.dirname(results_path), exist_ok=True)
                 sim_results.to_csv(results_path, index=False)
                 print(f"Interim save to {results_path}")
-                
+
         # Final save
         os.makedirs(os.path.dirname(results_path), exist_ok=True)
         sim_results.to_csv(results_path, index=False)

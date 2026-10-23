@@ -15,8 +15,8 @@ import probabilistic_simulation_helpers as helpers
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
-CONSTANTS_DIRECTORY = "constants/sensitivity/"
-OUTPUT_DIRECTORY = "results/model_output/sensitivity/"
+CONSTANTS_DIRECTORY = "constants/surgery_sensitivity/"
+OUTPUT_DIRECTORY = "results/model_output/surgery_sensitivity/"
 LOG_DIRECTORY = "logs/"
 
 # can modify here to leave whatever number of cores free

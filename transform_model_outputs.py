@@ -6,8 +6,8 @@ import os
 # CONFIGURATION
 # =============================================================================
 # The subdirectory for the specific model output we want to process
-INPUT_DIRECTORY = f"results/model_output/sensitivity/"
-OUTPUT_DIRECTORY = f"results/calculated/sensitivity/"
+INPUT_DIRECTORY = f"results/model_output/surgery_sensitivity/"
+OUTPUT_DIRECTORY = f"results/calculated/surgery_sensitivity/"
 
 # Scenarios defined in the project configuration
 ANALYSES = [

@@ -7,7 +7,7 @@ import os
 # --- Configuration ---
 
 # File paths as requested
-IMPORT_PATH = "results/calculated/sensitivity/"
+IMPORT_PATH = "results/calculated/surgery_sensitivity/"
 EXPORT_PATH = "figures/sensitivity/"
 
 # Sensitivity analyses to include

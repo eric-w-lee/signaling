@@ -8,8 +8,8 @@ import os
 
 # --- Configuration ---
 
-INPUT_DIRECTORY = "results/calculated/sensitivity/"
-OUTPUT_DIRECTORY = "figures/sensitivity/"
+INPUT_DIRECTORY = "results/calculated/surgery_sensitivity/"
+OUTPUT_DIRECTORY = "figures/surgery_sensitivity/"
 
 # The 5 analyses you want to graph. These should match the CSV filenames (without .csv)
 ANALYSES_TO_GRAPH = [
@@ -19,11 +19,14 @@ ANALYSES_TO_GRAPH = [
     "prioritize_80"
 ]
 
-PROGRAMS_TO_GRAPH = [
-    ("Anesthesiology", 7),
-    ("Surgery (Categorical)", 7),
-    ("Interventional Radiology (Integrated)", 7)
-]
+# PROGRAMS_TO_GRAPH = [
+#     ("Anesthesiology", 7),
+#     ("Surgery (Categorical)", 7),
+#     ("Interventional Radiology (Integrated)", 7)
+# ]
+
+PROGRAMS_TO_GRAPH = [(("Surgery (Categorical)", i)) for i in range(31)]
+
 
 METRIC_NAMES = {
     'p_int_given_signal_mean': 'Interview | Signal',

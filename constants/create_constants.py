@@ -2,20 +2,20 @@ import os
 import numpy as np
 import pandas as pd
 
-# create new constants file:
-# Generate independent random market configurations for the fixed signal level.
+# Create independent random market configurations for the surgery signal sweep.
 
-SETS_PER_SPECIALTY = 10000
-SIGNALS_PER_APPLICANT = 7
+SETS_PER_SIGNAL = 5000
+SIGNAL_COUNTS = range(31)
+
 TARGET_SPECIALTIES = {
     "Surgery (Categorical)",
-    "Anesthesiology",
-    "Interventional Radiology (Integrated)",
 }
+
+
 SEED = 7
 np.random.seed(SEED)
 
-OUTPUT_DIRECTORY = "constants/sensitivity/"
+OUTPUT_DIRECTORY = "constants/surgery_sensitivity/"
 # check if directory exists, if not create it
 if not os.path.exists(OUTPUT_DIRECTORY):
     os.makedirs(OUTPUT_DIRECTORY)
@@ -46,37 +46,38 @@ for program in nrmp_dict:
     n_programs = program['n_programs']
     n_applicants = program['n_applicants']
     n_positions = program['n_positions']
-    for set_index in range(SETS_PER_SPECIALTY):
-        simulated_programs = int(
-            np.random.uniform(
-                n_programs * (1-P_DEVIATION_PROGRAMS),
-                n_programs * (1+P_DEVIATION_PROGRAMS)))
-        simulated_positions = int(
-            np.random.uniform(
-                n_positions * (1-P_DEVIATION_POSITIONS),
-                n_positions * (1+P_DEVIATION_POSITIONS)))
-        simulated_applicants = int(
-            np.random.uniform(
-                n_applicants * (1-P_DEVIATION_APPLICANTS),
-                n_applicants * (1+P_DEVIATION_APPLICANTS)))
-        applicant_applications = np.random.gamma(
-            GAMMA_SHAPE_APPLICATIONS,
-            GAMMA_SCALE_APPLICATIONS,
-            size=simulated_applicants).astype(int)
-        interviews_per_position = np.random.gamma(
-            GAMMA_SHAPE_INTERVIEWS_PER_POSITION,
-            GAMMA_SCALE_INTERVIEWS_PER_POSITION,
-            size=simulated_programs).astype(int)
-        final_sets.append({
-            'program': name,
-            'signals': SIGNALS_PER_APPLICANT,
-            'n_programs': simulated_programs,
-            'n_positions': simulated_positions,
-            'n_applicants': simulated_applicants,
-            'sim_id': f"{name}_{SIGNALS_PER_APPLICANT}_{set_index}",
-            'applications_list': list(applicant_applications),
-            'interviews_per_pos_list': list(interviews_per_position)
-        })
+    for signals in SIGNAL_COUNTS:
+        for set_index in range(SETS_PER_SIGNAL):
+            simulated_programs = int(
+                np.random.uniform(
+                    n_programs * (1-P_DEVIATION_PROGRAMS),
+                    n_programs * (1+P_DEVIATION_PROGRAMS)))
+            simulated_positions = int(
+                np.random.uniform(
+                    n_positions * (1-P_DEVIATION_POSITIONS),
+                    n_positions * (1+P_DEVIATION_POSITIONS)))
+            simulated_applicants = int(
+                np.random.uniform(
+                    n_applicants * (1-P_DEVIATION_APPLICANTS),
+                    n_applicants * (1+P_DEVIATION_APPLICANTS)))
+            applicant_applications = np.random.gamma(
+                GAMMA_SHAPE_APPLICATIONS,
+                GAMMA_SCALE_APPLICATIONS,
+                size=simulated_applicants).astype(int)
+            interviews_per_position = np.random.gamma(
+                GAMMA_SHAPE_INTERVIEWS_PER_POSITION,
+                GAMMA_SCALE_INTERVIEWS_PER_POSITION,
+                size=simulated_programs).astype(int)
+            final_sets.append({
+                'program': name,
+                'signals': signals,
+                'n_programs': simulated_programs,
+                'n_positions': simulated_positions,
+                'n_applicants': simulated_applicants,
+                'sim_id': f"{name}_{signals}_{set_index}",
+                'applications_list': list(applicant_applications),
+                'interviews_per_pos_list': list(interviews_per_position)
+            })
 
 # Convert to DataFrame and export
 # parquet used so we don't need to convert data types to store lists, and

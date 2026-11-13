@@ -111,7 +111,10 @@ def get_dtypes(columns: list) -> dict:
     '''
     dtypes = {columns[0]: 'str'}  # analysis name should be a string
     for column in columns[1:]:
-        # percentage in float, all others are toggles
-        dtypes[column] = 'float64' if column == (
-            'percent_programs_prioritize_signals') else 'bool'
+        if column == 'non_signal_review_probability':
+            dtypes[column] = 'float64'
+        elif column == 'rank_mode':
+            dtypes[column] = 'str'
+        else:
+            dtypes[column] = 'bool'
     return dtypes

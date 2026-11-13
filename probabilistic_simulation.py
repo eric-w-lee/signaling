@@ -15,12 +15,22 @@ import probabilistic_simulation_helpers as helpers
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
-CONSTANTS_DIRECTORY = "constants/surgery_sensitivity/"
-OUTPUT_DIRECTORY = "results/model_output/surgery_sensitivity/"
+CONSTANTS_DIRECTORY = "constants/nov_sensitivity_test/"
+OUTPUT_DIRECTORY = "results/model_output/nov_sensitivity_test/"
 LOG_DIRECTORY = "logs/"
 
 # can modify here to leave whatever number of cores free
 CORES_TO_USE = max(1, os.cpu_count()-4)
+
+
+def _apply_transpositions(items: list, transpositions: list) -> list:
+    """Apply adjacent swaps supplied with the market constants."""
+    ranked_items = list(items)
+    for left, right in transpositions:
+        if right < len(ranked_items):
+            ranked_items[left], ranked_items[right] = (
+                ranked_items[right], ranked_items[left])
+    return ranked_items
 
 
 def format_elapsed(seconds: float) -> str:
@@ -260,7 +270,8 @@ class Applicant:
         else:
             self.signaled_interviews.sort()  # sort in ascending order
             self.non_signaled_interviews.sort()  # sort in ascending order
-        self.final_rank_list = self.signaled_interviews + self.non_signaled_interviews
+        self.final_rank_list = (
+            self.signaled_interviews + self.non_signaled_interviews)
 
     def pick_programs(self,
                       all_programs: list,
@@ -459,8 +470,9 @@ class Program:
         "n_interviews",
         "rank_index",    # added in stable_match
         "random_rank_list_order",
-        # whether each program instance utilizes signals in interview and ranking
-        "prioritize_signals"
+        "non_signal_review_probability",
+        "rank_mode",
+        "rank_transpositions"
     )
 
     def create_final_rank_list_and_count_reviews(self):
@@ -469,18 +481,12 @@ class Program:
         and signaled to programs. Now, the goal is to fill the program 
         interviews. So, the logic is:
 
-        0. Reviewed applications = len(received signals) 
-        1. Sort the received signals and non-signals in ascending order
-        2. If len(received signals) >= num_interviews:
-            final_rank_list = received signals [0:num_interviews]
-        3. If len(received signals) < num_interviews:
-            reviewed applications += len(received no signals)
-            final_rank_list = 
-                received signals + received no signals [0:remaining spots]
-
-        Note: also support for ignoring applicant ranking and randomly
-        ranking people
-
+        1) review every signaled application 
+        2) sample from the non-signaled applications according to the configured probability.
+        3) combine the reviewed signaled and non-signaled applications to create the final rank list.
+        4) sort the final rank list according to the configured ranking mode.
+        5) take the top n applications if necessary.
+        6) udpate the final rank list.
         '''
         signal_list = list(self.received_signals)
         no_signal_list = list(self.received_no_signals)
@@ -493,27 +499,32 @@ class Program:
             signal_list.sort()
             no_signal_list.sort()
 
-        # if this program prioritizes signals
-        if self.prioritize_signals:
-            # check how many applications it needs to review
-            if len(self.received_signals) >= self.n_interviews:
-                self.final_rank_list = signal_list[:self.n_interviews]
-                # had to look through all signals to sort
-                self.reviewed_applications = len(signal_list)
-            else:
-                remaining_spots = self.n_interviews - len(self.received_signals)
-                # can one day relax this assumption of having to review all non-signals with greedy opt, but won't change local min
-                self.reviewed_applications = len(self.received_no_signals) + len(self.received_signals)
-                self.final_rank_list = signal_list + no_signal_list[:remaining_spots]
-        else: 
-            # if this program does not prioritize signals, it reviews all applications to rank them 
-            self.reviewed_applications = len(signal_list) + len(no_signal_list)
-            all_applicants = signal_list + no_signal_list
-            if self.random_rank_list_order:
-                np.random.shuffle(all_applicants)
-            else:
-                all_applicants.sort()
-            self.final_rank_list = all_applicants[:self.n_interviews]
+        reviewed_no_signals = [
+            app_id for app_id in no_signal_list
+            if self.non_signal_review_probability >= 1
+            or np.random.random() < self.non_signal_review_probability # for each non-signal, they have a set p of being reviewed at random 
+        ]
+        
+        self.reviewed_applications = len(signal_list) + len(reviewed_no_signals)
+        if self.reviewed_applications < self.n_interviews:
+            # if there are not enough reviewed applications to fill the interview slots, we need to review all of the them
+            reviewed_no_signals = no_signal_list
+            self.reviewed_applications = len(signal_list) + len(reviewed_no_signals)
+
+        if self.rank_mode == "signal_priority": # all signals always ranked higher than non-signals
+            ranked_applicants = signal_list + reviewed_no_signals # invariant: nonsignals already sorted 
+            ranked_applicants = _apply_transpositions(
+                ranked_applicants, self.rank_transpositions)
+        elif self.rank_mode == "global_quality": # all applicants are ranked by global quality 
+            ranked_applicants = signal_list + reviewed_no_signals
+            ranked_applicants.sort() # global sort 
+            ranked_applicants = _apply_transpositions(
+                ranked_applicants, self.rank_transpositions)
+        else:
+            raise ValueError(f"Unknown rank mode: {self.rank_mode}")
+
+
+        self.final_rank_list = ranked_applicants[:self.n_interviews]
         
     def __init__(
             self,
@@ -522,7 +533,9 @@ class Program:
             positions,
             position_lookups,
             random_rank_list_order=False,
-            prioritize_signals=True):
+            non_signal_review_probability=1.0,
+            rank_mode="signal_priority",
+            rank_transpositions=None):
 
         self.id = id_index
         self.n_positions = positions
@@ -530,7 +543,10 @@ class Program:
         self.quartile = position_lookups['program_id_to_quartile'][id_index]
         self.decile = position_lookups['program_id_to_decile'][id_index]
         self.random_rank_list_order = random_rank_list_order
-        self.prioritize_signals = prioritize_signals
+        self.non_signal_review_probability = non_signal_review_probability
+        self.rank_mode = rank_mode
+        self.rank_transpositions = (
+            [] if rank_transpositions is None else rank_transpositions)
         self.received_signals = []
         self.received_no_signals = []
         self.reviewed_applications = 0
@@ -566,20 +582,6 @@ def run_sim(sim_settings: dict, variation_settings: dict) -> dict:
     positions_per_program = _get_positions_per_program(sim_settings)
     position_lookups = helpers.get_lookups(sim_settings)
     
-    # sample num of programs that care about signals, assign ids, then create list of bools to instantiate 
-    n_prioritizing_programs = round(
-        sim_settings['n_programs'] * variation_settings[
-            'percent_programs_prioritize_signals'])
-    prioritizing_program_ids = set(np.random.choice(
-        sim_settings['n_programs'],
-        size=n_prioritizing_programs,
-        replace=False
-    ).tolist())
-    program_prioritize_signals = [
-        program_id in prioritizing_program_ids
-        for program_id in range(sim_settings['n_programs'])
-    ]
-
     programs = [
         Program(
             j,
@@ -588,7 +590,11 @@ def run_sim(sim_settings: dict, variation_settings: dict) -> dict:
             position_lookups,
             random_rank_list_order=variation_settings[
                 'random_program_rank_list'],
-            prioritize_signals=program_prioritize_signals[j]
+            non_signal_review_probability=variation_settings[
+                'non_signal_review_probability'],
+            rank_mode=variation_settings['rank_mode'],
+            rank_transpositions=sim_settings[
+                'program_rank_transpositions']
         ) for j in range(sim_settings['n_programs'])
     ]
 

@@ -8,15 +8,15 @@ import os
 
 # --- Configuration ---
 
-INPUT_DIRECTORY = "results/calculated/surgery_sensitivity/"
-OUTPUT_DIRECTORY = "figures/surgery_sensitivity/"
+INPUT_DIRECTORY = "results/calculated/nov_sensitivity_test/"
+OUTPUT_DIRECTORY = "figures/nov_sensitivity_test/"
 
-# The 5 analyses you want to graph. These should match the CSV filenames (without .csv)
+# The analyses you want to graph. These should match the CSV filenames (without .csv)
 ANALYSES_TO_GRAPH = [
-    "prioritize_95",
-    "prioritize_90",
-    "prioritize_85",
-    "prioritize_80"
+    "signal_priority_025",
+    "signal_priority_050",
+    "signal_priority_075",
+    "signal_priority_100"
 ]
 
 # PROGRAMS_TO_GRAPH = [

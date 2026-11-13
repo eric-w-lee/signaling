@@ -7,15 +7,15 @@ import os
 # --- Configuration ---
 
 # File paths as requested
-IMPORT_PATH = "results/calculated/surgery_sensitivity/"
-EXPORT_PATH = "figures/sensitivity/"
+IMPORT_PATH = "results/calculated/nov_sensitivity_test/"
+EXPORT_PATH = "figures/nov_sensitivity_test/"
 
 # Sensitivity analyses to include
 ANALYSES = [
-    "prioritize_95",
-    "prioritize_90",
-    "prioritize_85",
-    "prioritize_80"
+    "signal_priority_025",
+    "signal_priority_050",
+    "signal_priority_075",
+    "signal_priority_100"
 ]
 
 

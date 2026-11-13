@@ -6,15 +6,14 @@ import os
 # CONFIGURATION
 # =============================================================================
 # The subdirectory for the specific model output we want to process
-INPUT_DIRECTORY = f"results/model_output/surgery_sensitivity/"
-OUTPUT_DIRECTORY = f"results/calculated/surgery_sensitivity/"
+INPUT_DIRECTORY = f"results/model_output/nov_sensitivity_test/"
+OUTPUT_DIRECTORY = f"results/calculated/nov_sensitivity_test/"
 
 # Scenarios defined in the project configuration
 ANALYSES = [
-    "prioritize_95",
-    "prioritize_90",
-    "prioritize_85",
-    "prioritize_80"
+    f"{rank_mode}_{probability:03d}"
+    for rank_mode in ("signal_priority", "global_quality")
+    for probability in range(5, 101, 5)
 ]
 
 # Core metrics used in individual, combined, and dual-axis graphs

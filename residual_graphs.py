@@ -7,16 +7,23 @@ import os
 # --- Configuration ---
 
 # File paths as requested
-IMPORT_PATH = "results/calculated/nov_sensitivity_test/"
-EXPORT_PATH = "figures/nov_sensitivity_test/"
+IMPORT_PATH = "results/calculated/nov_sensitivity_test_1000/"
+EXPORT_PATH = "figures/nov_sensitivity_test_1000/"
 
-# Sensitivity analyses to include
-ANALYSES = [
-    "signal_priority_025",
-    "signal_priority_050",
-    "signal_priority_075",
-    "signal_priority_100"
-]
+ANALYSIS_GROUPS = {
+    "signal_priority": [
+        "signal_priority_025",
+        "signal_priority_050",
+        "signal_priority_075",
+        "signal_priority_100"
+    ],
+    "global_quality": [
+        "global_quality_025",
+        "global_quality_050",
+        "global_quality_075",
+        "global_quality_100"
+    ]
+}
 
 
 def calculate_residuals(df, analysis_name):
@@ -74,10 +81,10 @@ def calculate_residuals(df, analysis_name):
     return pd.DataFrame(results)
 
 
-def main():
+def main(analyses, export_path):
     all_data = []
 
-    for analysis in ANALYSES:
+    for analysis in analyses:
         file_path = IMPORT_PATH + f"{analysis}.csv"
 
         if os.path.exists(file_path):
@@ -105,7 +112,7 @@ def main():
     fig.suptitle("Trade-offs: Minimizing Application Reviews vs. Maximizing Expected Interviews",
                  fontsize=22, fontweight='bold', y=0.96)
 
-    palette = sns.color_palette("tab10", len(ANALYSES))
+    palette = sns.color_palette("tab10", len(analyses))
 
     # --- Panel 1 (Left Panel) ---
     ax1 = axes[0]
@@ -197,7 +204,8 @@ def main():
     plt.subplots_adjust(top=0.88, wspace=0.05)
 
     # Save Figure
-    save_path = EXPORT_PATH + "residual_analysis_vertical.pdf"
+    os.makedirs(export_path, exist_ok=True)
+    save_path = os.path.join(export_path, "residual_analysis_vertical.pdf")
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     print(f"\nSaved graph successfully to: {save_path}")
 
@@ -205,4 +213,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    for mode, analyses in ANALYSIS_GROUPS.items():
+        main(analyses, os.path.join(EXPORT_PATH, mode))

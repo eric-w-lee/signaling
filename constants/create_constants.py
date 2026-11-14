@@ -4,7 +4,7 @@ import pandas as pd
 
 # Create independent random market configurations for the surgery signal sweep.
 
-SETS_PER_SIGNAL = 50
+SETS_PER_SIGNAL = 1000
 SIGNALING_SEED = 1
 SIGNAL_COUNTS = range(31)
 TRANSPOSITION_RATE = 0.05
@@ -18,7 +18,7 @@ TARGET_SPECIALTIES = {
 # Set SIGNALING_SEED for reproducible constants
 rng = np.random.default_rng(SIGNALING_SEED)
 
-OUTPUT_DIRECTORY = "constants/nov_sensitivity_test/"
+OUTPUT_DIRECTORY = "constants/nov_sensitivity_test_1000/"
 # check if directory exists, if not create it
 if not os.path.exists(OUTPUT_DIRECTORY):
     os.makedirs(OUTPUT_DIRECTORY)

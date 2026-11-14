@@ -8,16 +8,26 @@ import os
 
 # --- Configuration ---
 
-INPUT_DIRECTORY = "results/calculated/nov_sensitivity_test/"
-OUTPUT_DIRECTORY = "figures/nov_sensitivity_test/"
+INPUT_DIRECTORY = "results/calculated/nov_sensitivity_test_1000/"
+BASE_OUTPUT_DIRECTORY = "figures/nov_sensitivity_test_1000/"
 
-# The analyses you want to graph. These should match the CSV filenames (without .csv)
-ANALYSES_TO_GRAPH = [
-    "signal_priority_025",
-    "signal_priority_050",
-    "signal_priority_075",
-    "signal_priority_100"
-]
+ANALYSIS_GROUPS = {
+    "signal_priority": [
+        "signal_priority_025",
+        "signal_priority_050",
+        "signal_priority_075",
+        "signal_priority_100"
+    ],
+    "global_quality": [
+        "global_quality_025",
+        "global_quality_050",
+        "global_quality_075",
+        "global_quality_100"
+    ]
+}
+
+ANALYSES_TO_GRAPH = ANALYSIS_GROUPS["signal_priority"]
+OUTPUT_DIRECTORY = os.path.join(BASE_OUTPUT_DIRECTORY, "signal_priority")
 
 # PROGRAMS_TO_GRAPH = [
 #     ("Anesthesiology", 7),
@@ -58,30 +68,14 @@ METRIC_STYLES_A = {
 
 def create_decile_6_panel_graph(data_dict, program_name, decile_signal):
     """
-    Generates a 6-panel (2x3) chart showing decile match heatmaps for all 5 analyses.
-    The 6th position (1, 2) displays the chart title.
+    Generates a 6-panel (2x3) chart showing decile match heatmaps for one ranking mode.
     """
     fig = plt.figure(figsize=(24, 16))
     gs = gridspec.GridSpec(2, 3, figure=fig)
 
-    # Positions for the 5 analyses: (0,0), (0,1), (0,2), (1,0), (1,1)
-    # Position (1,2) is reserved for the title as requested by user.
-    # Wait, user said "place it in the top middle plot position (1, 2)". 
-    # In 2x3 grid, (1, 2) is bottom right in 0-indexing? 
-    # Top middle is (0, 1). 
-    # Let's re-read: "place it in the top middle plot position (1, 2)".
-    # Maybe user means 1-indexed? (1, 2) would be top row, middle column.
-    # I will assume 1-indexed (1, 2) which is top middle.
-    
-    # 0-indexed mapping:
-    # (0,0) (0,1) (0,2)
-    # (1,0) (1,1) (1,2)
-    
-    # User said "(1, 2)" and "top middle". 
-    # If it's (row, col) and 1-indexed: 1st row, 2nd col is top middle.
-    # So 0-indexed that is (0, 1).
-    
-    plot_positions = [(0, 0), (0, 2), (1, 0), (1, 1), (1, 2)]
+    plot_positions = [
+        (0, 0), (0, 2), (1, 0), (1, 1)
+    ]
     title_position = (0, 1)
 
     # Title panel
@@ -314,28 +308,32 @@ def create_4_panel_graph(data_dict, program_name, decile_signal):
 
 
 def main():
-    # Load all requested analyses into a dictionary of DataFrames
-    data_dict = {}
-    for analysis in ANALYSES_TO_GRAPH:
-        file_path = os.path.join(INPUT_DIRECTORY, f"{analysis}.csv")
-        if os.path.exists(file_path):
-            data_dict[analysis] = pd.read_csv(file_path)
-            print(f"Loaded: {analysis}.csv")
-        else:
-            print(f"Warning: Could not find {file_path}")
+    global ANALYSES_TO_GRAPH, ANALYSIS_COLORS, OUTPUT_DIRECTORY
 
-    if not data_dict:
-        print(
-            "Error: No data files found. Check your INPUT_DIRECTORY and ANALYSES_TO_GRAPH.")
-        return
+    for mode, analyses in ANALYSIS_GROUPS.items():
+        ANALYSES_TO_GRAPH = analyses
+        ANALYSIS_COLORS = sns.color_palette("tab10", len(ANALYSES_TO_GRAPH))
+        OUTPUT_DIRECTORY = os.path.join(BASE_OUTPUT_DIRECTORY, mode)
 
-    # Generate and save graphs for each program specified
-    for program_name, decile_signal in PROGRAMS_TO_GRAPH:
-        print(
-            f"Generating panels for: {program_name} (Decile Signal: {decile_signal})")
-        create_4_panel_graph(data_dict, program_name, decile_signal)
-        # Add the new 6-panel decile graph
-        create_decile_6_panel_graph(data_dict, program_name, decile_signal)
+        data_dict = {}
+        for analysis in ANALYSES_TO_GRAPH:
+            file_path = os.path.join(INPUT_DIRECTORY, f"{analysis}.csv")
+            if os.path.exists(file_path):
+                data_dict[analysis] = pd.read_csv(file_path)
+                print(f"Loaded: {analysis}.csv")
+            else:
+                print(f"Warning: Could not find {file_path}")
+
+        if not data_dict:
+            print(f"Error: No data files found for {mode}.")
+            continue
+
+        for program_name, decile_signal in PROGRAMS_TO_GRAPH:
+            print(
+                f"Generating {mode} panels for: "
+                f"{program_name} (Decile Signal: {decile_signal})")
+            create_4_panel_graph(data_dict, program_name, decile_signal)
+            create_decile_6_panel_graph(data_dict, program_name, decile_signal)
 
     print("All multi-analysis graphs successfully processed and saved!")
 

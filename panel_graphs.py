@@ -13,16 +13,16 @@ BASE_OUTPUT_DIRECTORY = "figures/nov_sensitivity_test_1000/"
 
 ANALYSIS_GROUPS = {
     "signal_priority": [
-        "signal_priority_025",
-        "signal_priority_050",
-        "signal_priority_075",
-        "signal_priority_100"
+        "signal_priority_005",
+        "signal_priority_010",
+        "signal_priority_015",
+        "signal_priority_020"
     ],
     "global_quality": [
-        "global_quality_025",
-        "global_quality_050",
-        "global_quality_075",
-        "global_quality_100"
+        "global_quality_005",
+        "global_quality_010",
+        "global_quality_015",
+        "global_quality_020"
     ]
 }
 
